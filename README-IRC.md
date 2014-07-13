@@ -31,8 +31,8 @@ IRC name field without actually binding this port locally. This is useful in a N
 where you might want to bind to a high port locally but DNAT a different possibly privileged
 port for inbound connections
 
-`irc_nick` is a nick name that will be appended to the E_ suffix when 
-composing the IRC nickname to identify your server on #electrum.
+`irc_nick` is a nick name that will be appended to the EL_ suffix when 
+composing the IRC nickname to identify your server on #electrum-drk.
 
 Please note the IRC name field can only contain 50 chars and will be composed
 of `host` + protocol version number + Port numbers for the various protocols.

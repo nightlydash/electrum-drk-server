@@ -12,7 +12,7 @@ requirements.
 
 The most up-to date version of this document is available at:
 
-    https://github.com/spesmilo/electrum-server/blob/master/HOWTO.md
+    https://github.com/nightlydarkcoin/electrum-drk-server/blob/master/HOWTO.md
 
 Conventions
 -----------
@@ -20,8 +20,8 @@ Conventions
 In this document, lines starting with a hash sign (#) or a dollar sign ($)
 contain commands. Commands starting with a hash should be run as root,
 commands starting with a dollar should be run as a normal user (in this
-document, we assume that user is called 'bitcoin'). We also assume the
-bitcoin user has sudo rights, so we use '$ sudo command' when we need to.
+document, we assume that user is called 'darkcoin'). We also assume the
+darkcoin user has sudo rights, so we use '$ sudo command' when we need to.
 
 Strings that are surrounded by "lower than" and "greater than" ( < and > )
 should be replaced by the user with something appropriate. For example,
@@ -53,10 +53,10 @@ build chain. You will need root access in order to install other software or
 Python libraries. 
 
 **Hardware.** The lightest setup is a pruning server with diskspace 
-requirements of about 10 GB for the electrum database. However note that 
-you also need to run bitcoind and keep a copy of the full blockchain, 
-which is roughly 20 GB in April 2014. If you have less than 2 GB of RAM 
-make sure you limit bitcoind to 8 concurrent connections. If you have more 
+requirements of about 4 GB for the electrum database. However note that 
+you also need to run darkcoind and keep a copy of the full blockchain, 
+which is roughly 4 GB in April 2014. If you have less than 2 GB of RAM 
+make sure you limit darkcoind to 8 concurrent connections. If you have more 
 ressources to  spare you can run the server with a higher limit of historic 
 transactions per address. CPU speed is important, mostly for the initial block 
 chain import, but also if you plan to run a public Electrum server, which 
@@ -67,90 +67,84 @@ has enough RAM to hold and procss the leveldb database in tmpfs (e.g. /dev/shm).
 Instructions
 ------------
 
-### Step 1. Create a user for running bitcoind and Electrum server
+### Step 1. Create a user for running darkcoind and Electrum server
 
 This step is optional, but for better security and resource separation I
-suggest you create a separate user just for running `bitcoind` and Electrum.
+suggest you create a separate user just for running `darkcoind` and Electrum.
 We will also use the `~/bin` directory to keep locally installed files
 (others might want to use `/usr/local/bin` instead). We will download source
 code files to the `~/src` directory.
 
-    $ sudo adduser bitcoin --disabled-password
+    $ sudo adduser darkcoin --disabled-password
     $ sudo apt-get install git
-    # su - bitcoin
+    # su - darkcoin
     $ mkdir ~/bin ~/src
     $ echo $PATH
 
-If you don't see `/home/bitcoin/bin` in the output, you should add this line
+If you don't see `/home/darkcoin/bin` in the output, you should add this line
 to your `.bashrc`, `.profile` or `.bash_profile`, then logout and relogin:
 
     PATH="$HOME/bin:$PATH"
 
 ### Step 2. Download and install Electrum
 
-We will download the latest git snapshot for Electrum and 'install' it in
-our ~/bin directory:
+We will download the latest git snapshot for Electrum server:
 
     $ mkdir -p ~/electrum-server
-    $ git clone https://github.com/spesmilo/electrum-server.git
+    $ git clone https://github.com/pooler/electrum-drk-server.git electrum-server
 
-### Step 3. Download bitcoind
+### Step 3. Download darkcoind
 
-Older versions of Electrum used to require a patched version of bitcoind. 
-This is not the case anymore since bitcoind supports the 'txindex' option.
-We currently recommend bitcoind 0.9.2 stable.
+Older versions of Electrum used to require a patched version of darkcoind. 
+This is not the case anymore since darkcoind supports the 'txindex' option.
+We currently recommend darkcoind 0.9.11.6 stable.
 
-If your package manager does not supply a recent bitcoind and prefer to compile
-here are some pointers for Ubuntu:
+If you prefer to compile darkcoind, here are some pointers for Ubuntu:
 
-    # apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev pkg-config
-    # su - bitcoin
-    $ cd ~/src && wget https://bitcoin.org/bin/0.9.2/bitcoin-0.9.2-linux.tar.gz
-    $ sha256sum bitcoin-0.9.2-linux.tar.gz | grep 58a77aeb4c81b54d3903d85abce4f0fb580694a3611a415c5fe69a27dea5935b
-    $ tar xfz bitcoin-0.9.2-linux.tar.gz
-    $ cd bitcoin-0.9.2-linux/src
-    $ tar xfz bitcoin-0.9.2.tar.gz
-    $ cd bitcoin-0.9.2
-    $ ./configure --disable-wallet --without-miniupnpc
-    $ make
-    $ strip ~/src/bitcoin-0.9.2-linux/src/bitcoin-0.9.2/src/bitcoind
-    $ cp -a ~/src/bitcoin-0.9.2-linux/src/bitcoin-0.9.2/src/bitcoind ~/bin/bitcoind
+    # apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev pkg-config libminiupnpc-dev git
+    # su - darkcoin
+    $ cd ~/src && git clone https://github.com/darkcoin-project/darkcoin.git
+    $ cd darkcoin/src
+    $ make -f makefile.unix
+    $ strip darkcoind
+    $ cp -a ~/src/darkcoin/src/darkcoind ~/bin/darkcoind
 
-### Step 4. Configure and start bitcoind
+### Step 4. Configure and start darkcoind
 
-In order to allow Electrum to "talk" to `bitcoind`, we need to set up a RPC
-username and password for `bitcoind`. We will then start `bitcoind` and
+In order to allow Electrum to "talk" to `darkcoind`, we need to set up a RPC
+username and password for `darkcoind`. We will then start `darkcoind` and
 wait for it to complete downloading the blockchain.
 
-    $ mkdir ~/.bitcoin
-    $ $EDITOR ~/.bitcoin/bitcoin.conf
+    $ mkdir ~/.darkcoin
+    $ $EDITOR ~/.darkcoin/darkcoin.conf
 
-Write this in `bitcoin.conf`:
+Write this in `darkcoin.conf`:
 
     rpcuser=<rpc-username>
     rpcpassword=<rpc-password>
     daemon=1
     txindex=1
+    disablewallet=1
 
 
-If you have an existing installation of bitcoind and have not previously
+If you have an existing installation of darkcoind and have not previously
 set txindex=1 you need to reindex the blockchain by running
 
-    $ bitcoind -reindex
+    $ darkcoind -reindex
 
-If you have a fresh copy of bitcoind start `bitcoind`:
+If you have a fresh copy of darkcoind start `darkcoind`:
 
-    $ bitcoind
+    $ darkcoind
 
-Allow some time to pass, so `bitcoind` connects to the network and starts
+Allow some time to pass, so `darkcoind` connects to the network and starts
 downloading blocks. You can check its progress by running:
 
-    $ bitcoind getinfo
+    $ darkcoind getinfo
 
-Before starting electrum server your bitcoind should have processed all 
+Before starting electrum server your darkcoind should have processed all 
 blockes and caught up to the current height of the network.
-You should also set up your system to automatically start bitcoind at boot
-time, running as the 'bitcoin' user. Check your system documentation to
+You should also set up your system to automatically start darkcoind at boot
+time, running as the 'darkcoin' user. Check your system documentation to
 find out the best way to do this.
 
 ### Step 5. Install Electrum dependencies
@@ -200,11 +194,11 @@ It's recommended to fetch a pre-processed leveldb from the net
 
 You can fetch recent copies of electrum leveldb databases and further instructions 
 from the Electrum full archival server foundry at:
-http://foundry.electrum.org/ 
+http://foundry.electrum-drk.org/leveldb-dump/
 
 Alternatively if you have the time and nerve you can import the blockchain yourself.
 
-As of April 2014 it takes between two days and over a week to import 300k of blocks, depending
+As of April 2014 it takes between one and two days to import 500k of blocks, depending
 on CPU speed, I/O speed and selected pruning limit.
 
 It's considerably faster and strongly recommended to index in memory. You can use /dev/shm or
@@ -212,15 +206,15 @@ or create a tmpfs which will also use swap if you run out of memory:
 
     $ sudo mount -t tmpfs -o rw,nodev,nosuid,noatime,size=15000M,mode=0777 none /tmpfs
 
-If you use tmpfs make sure you have enough RAM and swap to cover the size. If you only have 4 gigs of
+If you use tmpfs make sure you have enough RAM and swap to cover the size. If you only have 2 gigs of
 RAM but add 15 gigs of swap from a file that's fine too. tmpfs is rather smart to swap out the least
 used parts. It's fine to use a file on a SSD for swap in thise case. 
 
 It's not recommended to do initial indexing of the database on a SSD because the indexing process
-does at least 20 TB (!) of disk writes and puts considerable wear-and-tear on a SSD. It's a lot better
+does at least 10 TB (!) of disk writes and puts considerable wear-and-tear on a SSD. It's a lot better
 to use tmpfs and just swap out to disk when necessary.   
 
-Databases have grown to roughly 8 GB in April 2014, give or take a gigabyte between pruning limits 
+Databases have grown to roughly 4 GB in April 2014, give or take a gigabyte between pruning limits 
 100 and 10000. Leveldb prunes the database from time to time, so it's not uncommon to see databases
 ~50% larger at times when it's writing a lot especially when indexing from the beginning.
 
@@ -265,12 +259,12 @@ in case you need to restore it.
 
 ### Step 10. Configure Electrum server
 
-Electrum reads a config file (/etc/electrum.conf) when starting up. This
-file includes the database setup, bitcoind RPC setup, and a few other
+Electrum reads a config file (/etc/electrum-drk.conf) when starting up. This
+file includes the database setup, darkcoind RPC setup, and a few other
 options.
 
-    $ sudo cp ~/src/electrum/server/electrum.conf.sample /etc/electrum.conf
-    $ sudo $EDITOR /etc/electrum.conf
+    $ sudo cp ~/electrum-server/electrum.conf.sample /etc/electrum-drk.conf
+    $ sudo $EDITOR /etc/electrum-drk.conf
 
 Go through the sample config options and set them to your liking.
 If you intend to run the server publicly have a look at README-IRC.md 
@@ -284,7 +278,7 @@ root user who usually passes this value to all unprivileged user sessions too.
 
     $ sudo sed -i '$a ulimit -n 16384' /root/.bashrc
 
-Also make sure the bitcoin user can actually increase the ulimit by allowing it accordingly in
+Also make sure the darkcoin user can actually increase the ulimit by allowing it accordingly in
 /etc/security/limits.conf
 
 While most bugs are fixed in this regard electrum server may leak some memory and it's good practice to
@@ -293,9 +287,9 @@ it for crashes and then restart the server. Monthly restarts should be fine for 
 
 Two more things for you to consider:
 
-1. To increase security you may want to close bitcoind for incoming connections and connect outbound only
+1. To increase security you may want to close darkcoind for incoming connections and connect outbound only
 
-2. Consider restarting bitcoind (together with electrum-server) on a weekly basis to clear out unconfirmed
+2. Consider restarting darkcoind (together with electrum-server) on a weekly basis to clear out unconfirmed
    transactions from the local the memory pool which did not propagate over the network
 
 ### Step 12. (Finally!) Run Electrum server
@@ -326,16 +320,16 @@ or hostname and the port. Press Ok, the client will disconnect from the
 current server and connect to your new Electrum server. You should see your
 addresses and transactions history. You can see the number of blocks and
 response time in the Server selection window. You should send/receive some
-bitcoins to confirm that everything is working properly.
+darkcoins to confirm that everything is working properly.
 
 ### Step 14. Join us on IRC, subscribe to the server thread
 
 Say hi to the dev crew, other server operators and fans on 
-irc.freenode.net #electrum and we'll try to congratulate you
+irc.freenode.net #electrum-drk and we'll try to congratulate you
 on supporting the community by running an Electrum node
 
-If you're operating a public Electrum server please subscribe
-to or regulary check the following thread:
-https://bitcointalk.org/index.php?topic=85475.0
-It'll contain announcements about important updates to Electrum
+If you're operating a public Electrum-DRK server please subscribe
+to the following mailing list:
+https://groups.google.com/forum/#!forum/electrum-drk-server
+It'll contain announcements about important updates to Electrum-DRK
 server required for a smooth user experience.
